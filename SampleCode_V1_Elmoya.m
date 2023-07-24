@@ -47,3 +47,12 @@ info.r = r;
 info.x = x;
 info.y = y;
 end
+
+function plot_area(x_min,x_max,y_min,y_max)
+figure(1)
+plot([x_min x_min],[y_min,y_max],'k','Linewidth',2)
+hold on
+plot([x_min x_max],[y_max,y_max],'k','Linewidth',2)
+plot([x_max x_max],[y_max,y_min],'k','Linewidth',2)
+plot([x_max x_min],[y_min,y_min],'k','Linewidth',2)
+end
