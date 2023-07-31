@@ -1,41 +1,50 @@
 function SampleCode_V1_ErfanS99
     clc;clear;close all;
+    dbstop error
     global x_max_coverage_area x_min_coverage_area y_max_coverage_area y_min_coverage_area
-    global th n_radar
+    global th
     global xMin yMin xMax yMax
     x_min_coverage_area = 0; % km
     x_max_coverage_area = 80; % km
     y_min_coverage_area = 0; % km
     y_max_coverage_area = 50; % km
 
-    xMin = 130;
-    yMin = 130;
-    yMax = 0;
-    xMax = 0;
+
 
     figure('Position',[400,100,720,580])
     plot_area(x_min_coverage_area,x_max_coverage_area,y_min_coverage_area,y_max_coverage_area)
 
 
-    n_radar = 1;
+    n_radar = 5;
 
     r = 20;  % radar radius (km)
 
-    th = 0:pi/560:2*pi;
+    th = 0:pi/5600:2*pi;
 
     x1_min = x_min_coverage_area - 30; % km
     x1_max = x_max_coverage_area + 30; % km
     y1_min = y_min_coverage_area - 30; % km
     y1_max = y_max_coverage_area + 30; % km
 
-    info = plot_radar_position_and_area(x1_min,x1_max,y1_min,y1_max,r);
+
 
     xlim([-50 130])
     ylim([-50 100])
     %%
+
+for n = 1:n_radar
+    xMin = 130;
+    yMin = 130;
+    yMax = 0;
+    xMax = 0;
+    x_inArea = 0;
+    y_inArea = 0;
+    info = plot_radar_position_and_area(x1_min,x1_max,y1_min,y1_max,r);
     x = info.x;
     y = info.y;
-
+    xc = info.xc;
+    yc = info.yc;
+    text(xc+3,yc-3,num2str(n));
     inArea = find(((x_min_coverage_area <= x)&(x_max_coverage_area >= x)) & ((y_min_coverage_area <= y)&(y_max_coverage_area >= y)));
 
     if inArea
@@ -50,39 +59,42 @@ function SampleCode_V1_ErfanS99
        corner = findCorner(info.x,info.y);
        Area = merging(corner,x_inArea,y_inArea);
 
-       fill(Area.x_inArea,Area.y_inArea,'g')
-       fprintf("Intersection Area is %0.4f [km^2]\n",polyarea(Area.x_inArea,Area.y_inArea));
+       fill(Area.x_inArea,Area.y_inArea,'g');
+
+       fprintf("Circle %d Intersection Area is %0.4f [km^2]\n",n,polyarea(Area.x_inArea,Area.y_inArea));
     else 
-        disp("No Intersection");
+        fprintf("Circle %d has no Intersection\n",n);
     end
 
 end
-
+end
         
 %%
 function info = plot_radar_position_and_area(x_min,x_max,y_min,y_max,r)
-global th x_max_coverage_area x_min_coverage_area y_max_coverage_area y_min_coverage_area
+    global th x_max_coverage_area x_min_coverage_area y_max_coverage_area y_min_coverage_area
 
-while (true)
-    xc = unifrnd(x_min,x_max); % x position of circle center
-    yc = unifrnd(y_min,y_max); % y position of circle center
+    while (true)
+        xc = unifrnd(x_min,x_max); % x position of circle center
+        yc = unifrnd(y_min,y_max); % y position of circle center
 
-    x = r * cos(th) + xc;
-    y = r * sin(th) + yc;
-    if ((xc >= x_max_coverage_area) || (xc <= x_min_coverage_area)) && ((yc >= y_max_coverage_area) || (yc <= y_min_coverage_area))  
-        break
+        x = r * cos(th) + xc;
+        y = r * sin(th) + yc;
+        if ((xc >= x_max_coverage_area) || (xc <= x_min_coverage_area)) && ((yc >= y_max_coverage_area) || (yc <= y_min_coverage_area))  
+            break
+        end
     end
+
+    plot(x, y,'color','b','LineWidth',2);
+    plot(xc,yc,'o','markerfacecolor','r','markeredgecolor','r','markersize',5)
+
+    info.xc = xc;
+    info.yc = yc;
+    info.r = r;
+    info.x = x;
+    info.y = y;
+
 end
 
-plot(x, y,'color','b','LineWidth',2);
-plot(xc,yc,'o','markerfacecolor','r','markeredgecolor','r','markersize',5)
-
-info.xc = xc;
-info.yc = yc;
-info.r = r;
-info.x = x;
-info.y = y;
-end
 
 function plot_area(x_min,x_max,y_min,y_max)
 plot([x_min x_min],[y_min,y_max],'k','Linewidth',2)
