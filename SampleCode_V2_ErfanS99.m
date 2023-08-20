@@ -21,20 +21,21 @@ function SampleCode_V2_ErfanS99
     r = 20;  % radar radius (km)
 
     th = 0:pi/5600:2*pi;
-
+    
     xlim([-50 130])
     ylim([-50 100])
-    
-    %%
+
     x1_min = x_min_coverage_area - 30; % km
     x1_max = x_max_coverage_area + 30; % km
     y1_min = y_min_coverage_area - 30; % km
     y1_max = y_max_coverage_area + 30; % km
+    
     xx = [];
     yy = [];
     xxc = zeros(1,n_radar);
     yyc = zeros(1,n_radar);
     color = zeros(5,3);
+    
     for n = 1:n_radar
         while 1
             color(n,:) = rand(1,3);
@@ -83,7 +84,8 @@ function info = radar_position_and_area(x_min,x_max,y_min,y_max,r)
         end
     end
 
-
+%     plot(x, y,'color','b','LineWidth',2);
+%     plot(xc,yc,'o','markerfacecolor','r','markeredgecolor','r','markersize',5)
 
     info.xc = xc;
     info.yc = yc;
