@@ -1,4 +1,5 @@
 function SampleCode_V2_ErfanS99
+    %% Variable introducing
     tic
     clc;clear;close all;
     dbstop error
@@ -30,43 +31,88 @@ function SampleCode_V2_ErfanS99
     y1_min = y_min_coverage_area - 30; % km
     y1_max = y_max_coverage_area + 30; % km
     
-    xx = [];
-    yy = [];
-    xxc = zeros(1,n_radar);
-    yyc = zeros(1,n_radar);
     color = zeros(5,3);
+    inCircles = 1;
+    outCircles = 0;
+    xy_and_c = cell(5,n_radar);
+    inBoxCircles = cell(5,1);
+    %% Primary calculation
     
     for n = 1:n_radar
-        while 1
+        
+        % Finding Random Color for every circle
+        while 1                                                            
             color(n,:) = rand(1,3);
             if ~isequal(color(n,:),[1 1 1]) && ~isequal(color(n,:),[0 0 0])
                 break
             end
         end
-        info = radar_position_and_area(x1_min,x1_max,y1_min,y1_max,r);
-        [inOrout, Area] = findCoordinates(n,info);
-
-        xx(n,:) = info.x;
-        yy(n,:) = info.y;
-        xxc(n,1) = info.xc;
-        yyc(n,1) = info.yc;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        % Ploting box the finding coordinates of the circles
+        info = radar_position_and_area(x1_min,x1_max,y1_min,y1_max,r);
+        [inOrout, Area] = findCoordinates(info);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % Storing the Circles Coordinates in a variable for later use
+        xy_and_c(:,n) =  struct2cell(info);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % Checking the in box and out box circles
         if inOrout
-            fill(Area.x_inArea,Area.y_inArea,color(n,:));
-            fprintf("Circle %d Intersection Area is %0.4f [km^2]\n",n,polyarea(Area.x_inArea,Area.y_inArea));
+            Area.n = n;
+            % Storing the Circles Coordinates in a variable for later use
+            inBoxCircles(:,inCircles) = struct2cell(Area);
+            inCircles = inCircles + 1;
         else
-            fprintf("Circle %d has no Intersection\n",n);
+            outCircles = outCircles + 1;
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    end
+    %% Circles area calculations and plotting instersection areas
+    if outCircles ~= n_radar
+        inBoxCircles = cell2struct(inBoxCircles,{'x';'y';'area';'Corner';'N'},1);
+        inBoxCircles = sortStruct(inBoxCircles,'area');
+        
+        % Filling the in box circles
+        for n = 1:(length(inBoxCircles))
+            fill(inBoxCircles(n).x,inBoxCircles(n).y,color(inBoxCircles(n).N,:));
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        xy_and_c = cell2struct(xy_and_c, {'xc';'yc';'r';'x';'y'}, 1);
+        
+        % Plotting and filling the circles
+        for n = 1:n_radar
+            text(xy_and_c(n).xc+3,xy_and_c(n).yc-3,num2str(n));
+            plot(xy_and_c(n).x, xy_and_c(n).y,'color',color(n,:),'LineWidth',2);
+            plot(xy_and_c(n).xc, xy_and_c(n).yc,'o','markerfacecolor','r'...
+                ,'markeredgecolor','r','markersize',5) 
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        inBoxCircles = intersectionSubstraction(inBoxCircles);
+
+        % Printing the results
+        for n=1:n_radar
+            for nn = 1 : length(inBoxCircles)
+                if n == inBoxCircles(nn).N
+                    fprintf("Circle %d Intersection Area is %0.4f [km^2]\n",n,inBoxCircles(nn).area);
+                    break;
+                elseif nn == length(inBoxCircles)
+                    fprintf("Circle %d has no Intersection\n",n);
+                    continue;
+                end
+            end
         end
         
-    end
-    
-    for n = 1:n_radar
         
-        plot(xx(n,:), yy(n,:),'color',color(n,:),'LineWidth',2);
-        plot(xxc(n,1),yyc(n,1),'o','markerfacecolor','r','markeredgecolor','r','markersize',5) 
-        
+    else
+        close all;
+        fprintf("No Circle has any Intersection\n");
     end
-toc
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    toc
 end
         
 %%
@@ -79,14 +125,12 @@ function info = radar_position_and_area(x_min,x_max,y_min,y_max,r)
 
         x = r * cos(th) + xc;
         y = r * sin(th) + yc;
-        if ((xc >= x_max_coverage_area) || (xc <= x_min_coverage_area)) && ((yc >= y_max_coverage_area) || (yc <= y_min_coverage_area))  
+        if ((xc >= x_max_coverage_area) || (xc <= x_min_coverage_area)) ...
+                && ((yc >= y_max_coverage_area) || (yc <= y_min_coverage_area))  
             break
         end
     end
-
-%     plot(x, y,'color','b','LineWidth',2);
-%     plot(xc,yc,'o','markerfacecolor','r','markeredgecolor','r','markersize',5)
-
+ 
     info.xc = xc;
     info.yc = yc;
     info.r = r;
@@ -178,7 +222,7 @@ global x_max_coverage_area x_min_coverage_area y_max_coverage_area y_min_coverag
    out.y_inArea = y_inArea;
 end
 
-function [inOrout, Area] = findCoordinates(n,info)
+function [inOrout, Area] = findCoordinates(info)
     global xMin yMax yMin xMax
     global x_max_coverage_area x_min_coverage_area y_max_coverage_area y_min_coverage_area
     
@@ -191,10 +235,8 @@ function [inOrout, Area] = findCoordinates(n,info)
 
     x = info.x;
     y = info.y;
-    xc = info.xc;
-    yc = info.yc;
-    text(xc+3,yc-3,num2str(n));
-    inArea = find(((x_min_coverage_area <= x)&(x_max_coverage_area >= x)) & ((y_min_coverage_area <= y)&(y_max_coverage_area >= y)));
+    inArea = find(((x_min_coverage_area <= x)&(x_max_coverage_area >= x))...
+        & ((y_min_coverage_area <= y)&(y_max_coverage_area >= y)));
     
     if inArea
         j = 0;
@@ -207,10 +249,38 @@ function [inOrout, Area] = findCoordinates(n,info)
 
        corner = findCorner(info.x,info.y);
        Area = merging(corner,x_inArea,y_inArea);
+       Area.area = polyarea(Area.x_inArea,Area.y_inArea);
+       Area.corner = corner;
        inOrout = true;
     else
-       Area = false;
+       Area = nan;
        inOrout = false;
     end
 
+end
+
+function strc = sortStruct(strc,header)
+    strc = struct2table(strc);
+    strc = sortrows(strc,header);
+    strc = table2struct(strc);
+end
+
+function inBoxCircles = intersectionSubstraction(inBoxCircles)
+        if length(inBoxCircles) > 1
+            for i=1:floor(length(inBoxCircles)/2)
+               for j=1:length(inBoxCircles)
+                   if inBoxCircles(i).Corner == inBoxCircles(j).Corner
+                       if (inBoxCircles(i).area == inBoxCircles(j).area) || (i==j)
+                           continue;
+                       elseif inBoxCircles(i).area > inBoxCircles(j).area
+                           inBoxCircles(i).area = inBoxCircles(i).area - inBoxCircles(j).area;
+                           break;
+                       else
+                           inBoxCircles(j).area = inBoxCircles(j).area - inBoxCircles(i).area;
+                           break;
+                       end
+                   end
+               end
+            end
+        end
 end
