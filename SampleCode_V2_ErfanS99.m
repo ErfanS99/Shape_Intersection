@@ -17,7 +17,7 @@ function SampleCode_V2_ErfanS99
     plot_area(x_min_coverage_area,x_max_coverage_area,y_min_coverage_area,y_max_coverage_area)
 
 
-    n_radar = 5;
+    n_radar = 10;
 
     r = 20;  % radar radius (km)
 
